@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ferrari F1: Misión Zorro 🏎️🦊</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ferrari-red: #ef1a2d;
+            --ferrari-yellow: #ffeb3b;
+        }
+
+        body {
+            margin: 0; padding: 0;
+            background: #1b3022 url('https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=1350&auto=format&fit=crop') center/cover no-repeat fixed;
+            font-family: 'Segoe UI', sans-serif;
+            overflow: hidden;
+            color: white;
+            height: 100vh;
+        }
+
+        /* Cabecera con Telemetría */
+        .header {
+            background: rgba(0,0,0,0.85);
+            width: 100%;
+            padding: 15px 0;
+            text-align: center;
+            border-bottom: 4px solid var(--ferrari-red);
+            z-index: 10;
+            position: relative;
+        }
+
+        #telemetry {
+            font-family: 'Orbitron', sans-serif;
+            color: #0f0;
+            font-size: 1.1rem;
+            text-shadow: 0 0 10px #0f0;
+        }
+
+        /* Área de Juego */
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: calc(100vh - 100px);
+            cursor: crosshair;
+            touch-action: none;
+        }
+
+        #player-fox {
+            position: absolute;
+            font-size: 85px;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 5;
+            transition: 0.1s ease-out;
+            user-select: none;
+        }
+
+        .falling-item {
+            position: absolute;
+            font-size: 65px;
+            pointer-events: none;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));
+        }
+
+        /* Mensajes de Radio de Ferrari */
+        #radio-msg, #final-screen {
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--ferrari-red);
+            padding: 25px;
+            border-radius: 25px;
+            border: 4px solid var(--ferrari-yellow);
+            text-align: center;
+            display: none;
+            z-index: 100;
+            width: 85%;
+            max-width: 400px;
+            box-shadow: 0 0 50px rgba(0,0,0,0.9);
+        }
+
+        .btn-confirm {
+            background: white;
+            color: var(--ferrari-red);
+            border: none;
+            padding: 12px 30px;
+            border-radius: 10px;
+            font-weight: bold;
+            font-family: 'Orbitron';
+            cursor: pointer;
+            margin-top: 15px;
+            font-size: 1rem;
+        }
+
+        .score-board {
+            position: fixed;
+            top: 110px; right: 20px;
+            background: var(--ferrari-red);
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-family: 'Orbitron';
+            border: 2px solid white;
+            z-index: 15;
+            font-size: 1.2rem;
+        }
+
+        #music-control {
+            position: fixed;
+            bottom: 25px; left: 25px;
+            background: var(--ferrari-red);
+            border: 3px solid var(--ferrari-yellow);
+            color: white;
+            width: 65px; height: 65px;
+            border-radius: 50%;
+            font-size: 28px;
+            cursor: pointer;
+            z-index: 30;
+            display: flex; align-items: center; justify-content: center;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .trophy { font-size: 100px; display: block; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+    <audio id="miMusica" loop>
+        <source src="musica.mp3" type="audio/mpeg">
+    </audio>
+
+    <button id="music-control" onclick="toggleMusic()">🎵</button>
+
+    <div class="header">
+        <div id="telemetry">TIEMPO JUNTOS: Cargando...</div>
+        <div style="font-size: 0.8rem; color: var(--ferrari-yellow); margin-top: 5px; letter-spacing: 2px;">
+            De Adri Para TÍ mi Abigail 🏎️🏁
+        </div>
+    </div>
+
+    <div id="game-container">
+        <div id="player-fox">🦊</div>
+    </div>
+
+    <!-- Popups -->
+    <div id="radio-msg">
+        <h2 id="msg-title" style="font-family: 'Orbitron'; margin: 0;">📻 RADIO CHECK</h2>
+        <p id="msg-text" style="font-size: 1.2rem; font-weight: bold; margin: 20px 0;"></p>
+        <button class="btn-confirm" onclick="closeMsg()">seguir ❤️</button>
+    </div>
+
+    <div id="final-screen">
+        <span class="trophy">🏆</span>
+        <h2 style="font-family: 'Orbitron';">¡CAMPEONA MUNDIAL!</h2>
+        <p id="final-text" style="font-size: 1.1rem; line-height: 1.4;">
+            ¡Felicidades mi amor! lo lograste, siempre creí en tí. <br><br>
+            espero te haya gustado este regalito, te entrego esta copa por ser la persona más hermosa e increible del mundo. <br><br>
+            <strong>Te amo mucho mucho Abigail! ❤️🏁</strong>
+        </p>
+        <button class="btn-confirm" onclick="location.reload()">Reiniciar Carrera</button>
+    </div>
+
+    <div class="score-board">KM: <span id="score">0</span></div>
+
+    <script>
+        const container = document.getElementById('game-container');
+        const fox = document.getElementById('player-fox');
+        const scoreElement = document.getElementById('score');
+        const radioMsg = document.getElementById('radio-msg');
+        const finalScreen = document.getElementById('final-screen');
+        const msgText = document.getElementById('msg-text');
+        const audio = document.getElementById('miMusica');
+        
+        let score = 0;
+        let gamePaused = false;
+        const targetScore = 300;
+
+        const messages = {
+            15: "Buen inicio amor, lleguemos juntos al final",
+            30: "Hola hermosa a que hora sales por el pan? 🏎️",
+            45: "Cada paso que damos, nos acerca mas a nuesto destino juntos ❤️",
+            60: "Te amo muchísimo sigue así hermosa",
+            75: "Aun te acuerdas de nuestro primer día juntos? 🥰",
+            90: "Me tienes acelerando a mil el corazón ❤️💨",
+            105: "Eres lo mas lindo que la vida me dio 🏁",
+            120: "Ni Leclerc tiene tu estilo para manejar 🇮🇹",
+            135: "Eres mi piloto estrella, siempre en mi corazón 🌟❤️",
+            150: "Cada día que pasa te adoro mucho más, mi amor 💖",
+            165: "Cuanto por uno de tus besos? losnquiero todos",
+            180: "Gracias por ser mi compañera de vida🤝",
+            195: "Eres la dueña de mi corazón, mi amor eterno ❤️",
+            210: "Tu sonrisa es la curva que mas me gusta",
+            225: "Ya casi llegas al podio final mi ganadora 🏆",
+            240: "Hay que seguir juntos por 100pre🔥",
+            255: "Te amo más de lo que amo cualquier cosa ❤️",
+            270: "Falta muy poco, ¡no bajes el ritmo! 🦊✨",
+            285: "Ya casi llegas preciosa, ¡estoy tan orgulloso de ti! 🏁❤️",
+            300: "FIN DE CARRERA" 
+        };
+
+        function toggleMusic() {
+            if (audio.paused) {
+                audio.play();
+                document.getElementById('music-control').innerText = '🔊';
+            } else {
+                audio.pause();
+                document.getElementById('music-control').innerText = '🔇';
+            }
+        }
+
+        const moveFox = (clientX) => {
+            if (gamePaused) return;
+            const rect = container.getBoundingClientRect();
+            let x = clientX - rect.left - 40;
+            if (x < 0) x = 0;
+            if (x > rect.width - 80) x = rect.width - 80;
+            fox.style.left = x + 'px';
+        };
+
+        container.addEventListener('mousemove', (e) => moveFox(e.clientX));
+        container.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            moveFox(e.touches[0].clientX);
+        }, { passive: false });
+
+        function createItem() {
+            if (gamePaused) return;
+
+            const item = document.createElement('div');
+            item.className = 'falling-item';
+            const types = ['🌿', '🏎️', '🍁', '🏁', '❤️', '🦊', '⚡'];
+            item.innerHTML = types[Math.floor(Math.random() * types.length)];
+            item.style.left = Math.random() * (window.innerWidth - 70) + 'px';
+            item.style.top = '-80px';
+            container.appendChild(item);
+
+            let pos = -80;
+            let speed = 5 + (score / 40);
+
+            const interval = setInterval(() => {
+                if (gamePaused) return;
+                pos += speed;
+                item.style.top = pos + 'px';
+
+                const foxRect = fox.getBoundingClientRect();
+                const itemRect = item.getBoundingClientRect();
+
+                if (itemRect.bottom > foxRect.top + 20 && 
+                    itemRect.top < foxRect.bottom - 20 &&
+                    itemRect.left < foxRect.right - 15 && 
+                    itemRect.right > foxRect.left + 15) {
+                    
+                    score++;
+                    scoreElement.innerText = score;
+                    item.remove();
+                    clearInterval(interval);
+                    
+                    if (score === targetScore) {
+                        showFinalScreen();
+                    } else if (messages[score]) {
+                        showRadioMsg(score);
+                    }
+                }
+
+                if (pos > window.innerHeight) {
+                    item.remove();
+                    clearInterval(interval);
+                }
+            }, 20);
+        }
+
+        setInterval(createItem, 900);
+
+        function showRadioMsg(pts) {
+            gamePaused = true;
+            msgText.innerText = messages[pts];
+            radioMsg.style.display = 'block';
+        }
+
+        function closeMsg() {
+            radioMsg.style.display = 'none';
+            gamePaused = false;
+        }
+
+        function showFinalScreen() {
+            gamePaused = true;
+            finalScreen.style.display = 'block';
+        }
+
+        // Telemetría de tiempo (Basada en tu fecha del 8 de Enero)
+        const raceStart = new Date(2026, 0, 8).getTime(); 
+        function updateTime() {
+            const diff = new Date().getTime() - raceStart;
+            const d = Math.floor(diff / 86400000);
+            const h = Math.floor((diff % 86400000) / 3600000);
+            const m = Math.floor((diff % 3600000) / 60000);
+            const s = Math.floor((diff % 60000) / 1000);
+            document.getElementById("telemetry").innerText = 
+                `TIEMPO JUNTOS: ${d}D ${h}H ${m}M ${s}S`;
+        }
+        setInterval(updateTime, 1000);
+        updateTime();
+    </script>
+</body>
+</html>
